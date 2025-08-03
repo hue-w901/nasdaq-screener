@@ -1,0 +1,38 @@
+
+name: Nasdaq Screener Daily
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Runs daily at 8:00 UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Screener Script
+        run: |
+          python nasdaq_screener.py
+
+      - name: Commit Screener Results
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add screener_results.csv
+          git commit -m "🔁 Daily screener results"
+          git push
+        continue-on-error: true
