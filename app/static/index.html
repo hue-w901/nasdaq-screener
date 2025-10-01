@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NASDAQ Quant Screener</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <style>
+      body {
+        background: #0c111f;
+        color: #e8edf8;
+      }
+      a {
+        color: #7ecbff;
+      }
+      .card {
+        background: #151c2f;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      table thead {
+        color: #9db1ff;
+      }
+      .loading::after {
+        content: " …";
+        animation: blink 1s steps(2, start) infinite;
+      }
+      @keyframes blink {
+        to {
+          visibility: hidden;
+        }
+      }
+      .metric-pill {
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-4">
+      <header class="mb-4">
+        <h1 class="fw-bold">Quant Strategy Command Center</h1>
+        <p class="lead text-secondary">
+          Run the fundamental + technical screener, then dive into systematic strategy
+          performance to uncover alpha opportunities versus the S&amp;P 500.
+        </p>
+      </header>
+
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h4 mb-0">Screener</h2>
+              <span id="screener-status" class="text-secondary"></span>
+            </div>
+            <form id="screener-form" class="row gy-3 align-items-end">
+              <div class="col-md-6">
+                <label for="screener-tickers" class="form-label">Tickers</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="screener-tickers"
+                  placeholder="AAPL,MSFT,NVDA"
+                />
+                <div class="form-text text-secondary">
+                  Leave blank to use the curated large-cap growth universe.
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label for="screener-period" class="form-label">Price history</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="screener-period"
+                  value="1y"
+                />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Run Screener</button>
+              </div>
+            </form>
+            <div class="table-responsive mt-4">
+              <table class="table table-dark table-striped align-middle" id="screener-table">
+                <thead>
+                  <tr>
+                    <th>Ticker</th>
+                    <th>Close</th>
+                    <th>SMA50</th>
+                    <th>SMA200</th>
+                    <th>RSI</th>
+                    <th>Volume</th>
+                    <th>20d Avg Vol</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h4 mb-0">Strategy Rankings</h2>
+              <span id="ranking-status" class="text-secondary"></span>
+            </div>
+            <form id="ranking-form" class="row gy-3 align-items-end">
+              <div class="col-md-6">
+                <label for="ranking-tickers" class="form-label">Tickers</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="ranking-tickers"
+                  placeholder="AAPL,MSFT,NVDA"
+                />
+                <div class="form-text text-secondary">
+                  Leave blank to rank the screened universe.
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label for="ranking-period" class="form-label">Price history</label>
+                <input type="text" class="form-control" id="ranking-period" value="2y" />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-success w-100">Rank Strategies</button>
+              </div>
+            </form>
+            <div class="table-responsive mt-4">
+              <table class="table table-dark table-striped align-middle" id="ranking-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Ticker</th>
+                    <th>Strategy</th>
+                    <th>Alpha vs SPY</th>
+                    <th>CAGR</th>
+                    <th>Sharpe</th>
+                    <th>Sortino</th>
+                    <th>Calmar</th>
+                    <th>Max Drawdown</th>
+                    <th>Turnover</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h4 mb-0">Strategy Drill-down</h2>
+              <span id="detail-status" class="text-secondary"></span>
+            </div>
+            <form id="detail-form" class="row gy-3 align-items-end">
+              <div class="col-md-6">
+                <label for="detail-ticker" class="form-label">Ticker</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="detail-ticker"
+                  placeholder="AAPL"
+                />
+              </div>
+              <div class="col-md-3">
+                <label for="detail-period" class="form-label">Price history</label>
+                <input type="text" class="form-control" id="detail-period" value="2y" />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-warning w-100">Evaluate</button>
+              </div>
+            </form>
+            <div class="table-responsive mt-4">
+              <table class="table table-dark table-striped align-middle" id="detail-table">
+                <thead>
+                  <tr>
+                    <th>Strategy</th>
+                    <th>Alpha vs SPY</th>
+                    <th>CAGR</th>
+                    <th>Sharpe</th>
+                    <th>Sortino</th>
+                    <th>Calmar</th>
+                    <th>Volatility</th>
+                    <th>Win Rate</th>
+                    <th>Beta</th>
+                    <th>Info Ratio</th>
+                    <th>Turnover</th>
+                    <th>Exposure</th>
+                    <th>Max Drawdown</th>
+                    <th>Cumulative Return</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="text-secondary small text-center">
+        API endpoints power this UI. Launch locally with
+        <code>uvicorn app.main:app --reload</code> and explore programmatically at
+        <a href="/docs">/docs</a>.
+      </footer>
+    </div>
+
+    <script>
+      const screenerForm = document.getElementById('screener-form');
+      const screenerStatus = document.getElementById('screener-status');
+      const screenerTableBody = document.querySelector('#screener-table tbody');
+
+      const rankingForm = document.getElementById('ranking-form');
+      const rankingStatus = document.getElementById('ranking-status');
+      const rankingTableBody = document.querySelector('#ranking-table tbody');
+
+      const detailForm = document.getElementById('detail-form');
+      const detailStatus = document.getElementById('detail-status');
+      const detailTableBody = document.querySelector('#detail-table tbody');
+
+      function formatPercent(value, digits = 2) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return '—';
+        }
+        return `${(value * 100).toFixed(digits)}%`;
+      }
+
+      function formatNumber(value, digits = 2) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return '—';
+        }
+        return Number(value).toFixed(digits);
+      }
+
+      function setStatus(el, message, isLoading = false) {
+        el.textContent = message || '';
+        if (isLoading) {
+          el.classList.add('loading');
+        } else {
+          el.classList.remove('loading');
+        }
+      }
+
+      async function fetchJSON(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error(detail || response.statusText);
+        }
+        return response.json();
+      }
+
+      function renderScreenerTable(rows) {
+        screenerTableBody.innerHTML = '';
+        rows.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="fw-semibold">${row.Ticker}</td>
+            <td>${formatNumber(row.Close)}</td>
+            <td>${formatNumber(row.SMA50)}</td>
+            <td>${formatNumber(row.SMA200)}</td>
+            <td>${formatNumber(row.RSI)}</td>
+            <td>${formatNumber(row.Volume, 0)}</td>
+            <td>${formatNumber(row['Volume Avg (20d)'], 0)}</td>
+          `;
+          tr.addEventListener('click', () => {
+            document.getElementById('detail-ticker').value = row.Ticker;
+            detailForm.dispatchEvent(new Event('submit'));
+          });
+          screenerTableBody.appendChild(tr);
+        });
+      }
+
+      function renderRankingTable(rows) {
+        rankingTableBody.innerHTML = '';
+        rows.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          tr.title = row.description || '';
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td class="fw-semibold">${row.ticker}</td>
+            <td>
+              <div class="fw-semibold">${row.strategy}</div>
+              <div class="text-secondary small">${row.description || ''}</div>
+            </td>
+            <td>${formatPercent(row.alpha_vs_spy)}</td>
+            <td>${formatPercent(row.cagr)}</td>
+            <td>${formatNumber(row.sharpe)}</td>
+            <td>${formatNumber(row.sortino)}</td>
+            <td>${formatNumber(row.calmar)}</td>
+            <td>${formatPercent(row.max_drawdown)}</td>
+            <td>${formatPercent(row.turnover)}</td>
+          `;
+          rankingTableBody.appendChild(tr);
+        });
+      }
+
+      function renderDetailTable(rows) {
+        detailTableBody.innerHTML = '';
+        rows.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.title = row.description || '';
+          tr.innerHTML = `
+            <td>
+              <div class="fw-semibold">${row.strategy}</div>
+              <div class="text-secondary small">${row.description || ''}</div>
+            </td>
+            <td>${formatPercent(row.alpha_vs_spy)}</td>
+            <td>${formatPercent(row.cagr)}</td>
+            <td>${formatNumber(row.sharpe)}</td>
+            <td>${formatNumber(row.sortino)}</td>
+            <td>${formatNumber(row.calmar)}</td>
+            <td>${formatPercent(row.volatility)}</td>
+            <td>${formatPercent(row.win_rate)}</td>
+            <td>${formatNumber(row.beta)}</td>
+            <td>${formatNumber(row.information_ratio)}</td>
+            <td>${formatPercent(row.turnover)}</td>
+            <td>${formatPercent(row.exposure)}</td>
+            <td>${formatPercent(row.max_drawdown)}</td>
+            <td>${formatPercent(row.cumulative_return)}</td>
+          `;
+          detailTableBody.appendChild(tr);
+        });
+      }
+
+      screenerForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const tickers = document.getElementById('screener-tickers').value.trim();
+        const period = document.getElementById('screener-period').value.trim() || '1y';
+        const params = new URLSearchParams({ period });
+        if (tickers) {
+          params.set('tickers', tickers);
+        }
+        const url = `/api/screener?${params.toString()}`;
+        try {
+          setStatus(screenerStatus, 'Running screener', true);
+          const data = await fetchJSON(url);
+          renderScreenerTable(data.results || []);
+          setStatus(
+            screenerStatus,
+            `${data.results.length} tickers passed for ${data.period}`,
+          );
+        } catch (error) {
+          console.error(error);
+          setStatus(screenerStatus, error.message || 'Failed to run screener');
+          screenerTableBody.innerHTML = '';
+        }
+      });
+
+      rankingForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const tickers = document.getElementById('ranking-tickers').value.trim();
+        const period = document.getElementById('ranking-period').value.trim() || '2y';
+        const params = new URLSearchParams({ period });
+        if (tickers) {
+          params.set('tickers', tickers);
+        }
+        const url = `/api/strategies/rank?${params.toString()}`;
+        try {
+          setStatus(rankingStatus, 'Computing rankings', true);
+          const data = await fetchJSON(url);
+          renderRankingTable(data.results || []);
+          setStatus(
+            rankingStatus,
+            `${data.results.length} strategy combos ranked over ${data.period}`,
+          );
+        } catch (error) {
+          console.error(error);
+          setStatus(rankingStatus, error.message || 'Failed to rank strategies');
+          rankingTableBody.innerHTML = '';
+        }
+      });
+
+      detailForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const ticker = document.getElementById('detail-ticker').value.trim();
+        if (!ticker) {
+          setStatus(detailStatus, 'Enter a ticker');
+          return;
+        }
+        const period = document.getElementById('detail-period').value.trim() || '2y';
+        const params = new URLSearchParams({ period });
+        const url = `/api/strategies/${encodeURIComponent(ticker)}?${params.toString()}`;
+        try {
+          setStatus(detailStatus, `Evaluating ${ticker.toUpperCase()}`, true);
+          const data = await fetchJSON(url);
+          renderDetailTable(data.results || []);
+          setStatus(detailStatus, `Strategies refreshed for ${data.ticker}`);
+        } catch (error) {
+          console.error(error);
+          setStatus(detailStatus, error.message || 'Failed to evaluate strategies');
+          detailTableBody.innerHTML = '';
+        }
+      });
+
+      async function bootstrap() {
+        screenerForm.dispatchEvent(new Event('submit'));
+        rankingForm.dispatchEvent(new Event('submit'));
+      }
+
+      bootstrap();
+    </script>
+  </body>
+</html>

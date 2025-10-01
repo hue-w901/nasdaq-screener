@@ -2,3 +2,6 @@ yfinance
 pandas
 schedule
 ta-lib
+numpy
+fastapi
+uvicorn[standard]
